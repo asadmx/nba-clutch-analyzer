@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GameId Lookup • Clutch Rating Analyzer</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Modern font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root{
+          --app-bg: #0b1220;
+          --app-card: rgba(255,255,255,.07);
+          --app-card-2: rgba(255,255,255,.10);
+          --app-border: rgba(255,255,255,.12);
+          --app-text: rgba(255,255,255,.92);
+          --app-muted: rgba(255,255,255,.65);
+
+          --app-accent: #7c5cff;
+          --app-accent-2: #22c55e;
+
+          --app-shadow: 0 18px 50px rgba(0,0,0,.35);
+          --app-radius: 18px;
+        }
+
+        body{
+          font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+          background:
+            radial-gradient(1200px 500px at 15% -10%, rgba(124,92,255,0.35), transparent 60%),
+            radial-gradient(900px 450px at 85% 0%, rgba(34,197,94,0.22), transparent 55%),
+            radial-gradient(800px 520px at 50% 110%, rgba(124,92,255,0.18), transparent 60%),
+            var(--app-bg);
+          color: var(--app-text);
+        }
+
+        .app-container { max-width: 1100px; }
+
+        .app-card{
+          background: linear-gradient(180deg, var(--app-card), rgba(255,255,255,.03));
+          border: 1px solid var(--app-border) !important;
+          border-radius: var(--app-radius) !important;
+          box-shadow: var(--app-shadow);
+        }
+
+        .app-card-header{
+          background: linear-gradient(180deg, var(--app-card-2), var(--app-card));
+          border-bottom: 1px solid var(--app-border) !important;
+        }
+
+        .text-muted { color: var(--app-muted) !important; }
+
+        .badge-soft{
+          background: rgba(124,92,255,.18);
+          border: 1px solid rgba(124,92,255,.35);
+          color: rgba(255,255,255,.92);
+        }
+
+        .btn-accent{
+          background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(124,92,255,.72));
+          border: 1px solid rgba(124,92,255,.65);
+          color: #fff;
+        }
+        .btn-accent:hover{
+          background: linear-gradient(135deg, rgba(124,92,255,1), rgba(124,92,255,.78));
+          color: #fff;
+        }
+
+        .mono{
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        /* Sticky action bar (same as results) */
+        .sticky-actions{
+          position: sticky;
+          top: 12px;
+          z-index: 50;
+          border: 1px solid var(--app-border);
+          background: rgba(15, 23, 42, .65);
+          backdrop-filter: blur(10px);
+          border-radius: 16px;
+        }
+
+        /* Make Bootstrap inputs readable on dark glass */
+        .sticky-actions .form-control,
+        .sticky-actions .form-select{
+          background: rgba(255,255,255,.06);
+          border: 1px solid rgba(255,255,255,.14);
+          color: rgba(255,255,255,.92);
+        }
+        .sticky-actions .form-control::placeholder{
+          color: rgba(255,255,255,.55);
+        }
+        .sticky-actions .form-control:focus,
+        .sticky-actions .form-select:focus{
+          border-color: rgba(124,92,255,.70);
+          box-shadow: 0 0 0 .25rem rgba(124,92,255,.18);
+          background: rgba(255,255,255,.08);
+          color: rgba(255,255,255,.95);
+        }
+
+        /* ✅ FIX: Make opened dropdown option list readable (Windows/Chrome dark theme issue) */
+        .sticky-actions select option,
+        .sticky-actions select optgroup{
+          background: #0b1220;
+          color: rgba(255,255,255,.92);
+        }
+
+        /* Table polish (same vibe as results) */
+        .table{
+          --bs-table-bg: transparent;
+          --bs-table-color: rgba(255,255,255,.90);
+          --bs-table-hover-color: #fff;
+          --bs-table-hover-bg: rgba(124,92,255,.10);
+          margin-bottom: 0;
+        }
+        .table thead th{
+          color: rgba(255,255,255,.70);
+          font-weight: 700;
+          letter-spacing: .06em;
+          text-transform: uppercase;
+          font-size: 12px;
+          border-bottom: 1px solid var(--app-border) !important;
+          background: rgba(255,255,255,.05);
+          position: sticky;
+          top: 0;
+          z-index: 2;
+        }
+        .table tbody td{
+          border-bottom: 1px solid rgba(255,255,255,.07) !important;
+          vertical-align: middle;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .row-actions .btn{
+          border-color: rgba(255,255,255,.18) !important;
+        }
+
+        @media (max-width: 720px){
+          .stack-sm { flex-direction: column !important; align-items: stretch !important; }
+          .w-sm-100 { width: 100% !important; }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container app-container py-4 py-md-5">
+
+    <!-- Top bar (matches results) -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <span class="rounded-circle" style="width:10px;height:10px;background:linear-gradient(135deg,var(--app-accent),var(--app-accent-2));box-shadow:0 0 0 6px rgba(124,92,255,.14);"></span>
+            <span class="fw-semibold text-muted">Clutch Rating Analyzer</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/" class="btn btn-outline-light btn-sm">Home</a>
+            <a class="btn btn-outline-light btn-sm" href="/nba_game_index.csv" target="_blank" rel="noopener">Download CSV</a>
+        </div>
+    </div>
+
+    <!-- Hero / header -->
+    <div class="app-card p-3 p-md-4 mb-3">
+        <div class="d-flex justify-content-between align-items-start gap-3 stack-sm">
+            <div class="w-100">
+                <h1 class="h4 fw-bold mb-1">GameId Lookup</h1>
+                <div class="text-muted mt-2">
+                    Search by date, away/home tricode, or gameId. Filter by “Last X NBA dates” (days where games happened).
+                </div>
+                <div class="text-muted small mt-2">
+                    Uses <span class="mono">/nba_game_index.csv</span>. “Analyze” opens <span class="mono">/nba/game</span> in a new tab.
+                </div>
+            </div>
+
+            <a class="btn btn-accent w-sm-100" href="/nba/game?gameId=0022500000" target="_blank" rel="noopener"
+               onclick="event.preventDefault(); toast('Tip: Filter recent games, then click Analyze ✅');">
+                Quick Tip
+            </a>
+        </div>
+    </div>
+
+    <!-- Sticky filters -->
+    <div class="sticky-actions p-2 p-md-3 mb-3">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-2">
+
+            <div class="flex-grow-1" style="min-width: 220px;">
+                <label class="form-label small text-muted mb-1">Search</label>
+                <input id="q" class="form-control form-control-sm"
+                       placeholder="e.g. Oct 21 2025, HOU, LAL, 00225..." />
+            </div>
+
+            <!-- ✅ NEW: Presets for Days vs NBA Dates -->
+            <div style="min-width: 190px;">
+                <label class="form-label small text-muted mb-1">Recent filter</label>
+                <select id="datePreset" class="form-select form-select-sm">
+                    <option value="all" selected>All</option>
+                    <option value="days:7">Last 7 days</option>
+                    <option value="days:30">Last 30 days</option>
+                    <option value="nbadates:7">Last 7 NBA dates</option>
+                    <option value="nbadates:15">Last 15 NBA dates</option>
+                    <option value="custom">Custom…</option>
+                </select>
+            </div>
+
+            <!-- ✅ NEW: Custom controls -->
+            <div id="customPresetWrap" style="display:none; min-width: 320px;">
+                <div class="d-flex gap-2">
+                    <div style="min-width: 140px;">
+                        <label class="form-label small text-muted mb-1">Custom mode</label>
+                        <select id="customMode" class="form-select form-select-sm">
+                            <option value="days" selected>Days</option>
+                            <option value="nbadates">NBA dates</option>
+                        </select>
+                    </div>
+                    <div style="min-width: 140px;">
+                        <label class="form-label small text-muted mb-1">Custom N</label>
+                        <input id="customN" type="number" class="form-control form-control-sm" min="1" max="365" placeholder="15">
+                    </div>
+                </div>
+            </div>
+
+            <div style="min-width: 110px;">
+                <label class="form-label small text-muted mb-1">Rows</label>
+                <select id="limit" class="form-select form-select-sm">
+                    <option value="50">50</option>
+                    <option value="100" selected>100</option>
+                    <option value="250">250</option>
+                    <option value="500">500</option>
+                </select>
+            </div>
+
+            <div style="min-width: 160px;">
+                <label class="form-label small text-muted mb-1">Analyze window</label>
+                <select id="window" class="form-select form-select-sm">
+                    <option value="300" selected>Last 5:00</option>
+                    <option value="120">Last 2:00</option>
+                    <option value="custom">Custom…</option>
+                </select>
+            </div>
+
+            <div id="customWrap" style="display:none; min-width: 140px;">
+                <label class="form-label small text-muted mb-1">Custom (sec)</label>
+                <input id="customSec" type="number" class="form-control form-control-sm"
+                       min="1" max="720" placeholder="180">
+            </div>
+
+            <div class="d-flex gap-2">
+                <button id="reload" class="btn btn-outline-light btn-sm" type="button">Reload</button>
+                <button class="btn btn-outline-light btn-sm" type="button" onclick="copyLink()">Copy Link</button>
+            </div>
+        </div>
+
+        <div class="text-muted small mt-2">
+            Tip: “NBA dates” means unique game dates (days where games happened). Uses your local “today” date.
+        </div>
+        <div id="err" class="text-warning small mt-2" style="display:none;"></div>
+    </div>
+
+    <!-- Table -->
+    <div class="app-card">
+        <div class="app-card-header p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="fw-bold">Games</div>
+            <span id="meta" class="text-muted small">Loading…</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                <tr>
+                    <th style="width: 160px;">Game ID</th>
+                    <th style="width: 170px;">Date</th>
+                    <th style="width: 90px;">Away</th>
+                    <th style="width: 90px;">Home</th>
+                    <th>Matchup</th>
+                    <th style="width: 190px;">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="rows">
+                <tr><td colspan="6" class="text-muted">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="toast" class="toast text-bg-dark border-0" role="status" aria-live="polite" aria-atomic="true">
+            <div class="d-flex">
+                <div id="toastBody" class="toast-body">Copied</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let all = [];
+    const CSV_URL = "/nba_game_index.csv";
+
+    function showError(msg) {
+      const el = document.getElementById("err");
+      el.style.display = "block";
+      el.textContent = msg;
+    }
+    function hideError() {
+      const el = document.getElementById("err");
+      el.style.display = "none";
+      el.textContent = "";
+    }
+
+    function toast(msg) {
+      const body = document.getElementById("toastBody");
+      const el = document.getElementById("toast");
+      body.textContent = msg;
+      bootstrap.Toast.getOrCreateInstance(el, { delay: 1600 }).show();
+    }
+
+    async function copyText(txt) {
+      try {
+        await navigator.clipboard.writeText(txt);
+        toast("Copied gameId ✅");
+      } catch (e) {
+        const ta = document.createElement("textarea");
+        ta.value = txt;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toast("Copied gameId ✅");
+      }
+    }
+
+    async function copyLink() {
+      const url = window.location.href;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast("Link copied ✅");
+      } catch (e) {
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toast("Link copied ✅");
+      }
+    }
+
+    function getSelectedClutchSeconds() {
+      const sel = document.getElementById("window").value;
+      if (sel !== "custom") return sel;
+      const v = parseInt(document.getElementById("customSec").value, 10);
+      if (!v || v <= 0) return null;
+      return String(v);
+    }
+
+    function analyzeUrl(gameId) {
+      const clutchSeconds = getSelectedClutchSeconds();
+      const qs = new URLSearchParams();
+      qs.set("gameId", gameId);
+      if (clutchSeconds) qs.set("clutchSeconds", clutchSeconds);
+      return "/nba/game?" + qs.toString();
+    }
+
+    async function loadCsvText() {
+      const res = await fetch(CSV_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error("Could not load " + CSV_URL + " (HTTP " + res.status + ")");
+      return await res.text();
+    }
+
+    // Robust parsing for "Oct 21 2025"
+    const MONTHS = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
+
+    function parseIndexDate(str) {
+      const s = (str || "").trim().replace(/\s+/g, " ");
+      const m = /^([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})$/.exec(s);
+      if (!m) return null;
+      const mon = MONTHS[m[1].toLowerCase()];
+      if (mon === undefined) return null;
+      const day = parseInt(m[2], 10);
+      const year = parseInt(m[3], 10);
+      const d = new Date(year, mon, day, 0, 0, 0, 0);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function startOfToday() {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    }
+
+    function addDays(d, days) {
+      const out = new Date(d);
+      out.setDate(out.getDate() + days);
+      return out;
+    }
+
+    function dateKeyLocal(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function parseCsv(txt) {
+      const lines = txt.trim().split(/\r?\n/);
+      const header = lines.shift().split(",").map(s => s.trim().toLowerCase());
+      const idx = (name) => header.indexOf(name);
+
+      const iGame = idx("game_id");
+      const iDate = idx("date");
+
+      const iAway =
+        idx("away") !== -1 ? idx("away") :
+          (idx("away_trico") !== -1 ? idx("away_trico") : idx("away_tricode"));
+
+      const iHome =
+        idx("home") !== -1 ? idx("home") :
+          (idx("home_tricode") !== -1 ? idx("home_tricode") : idx("home_trico"));
+
+      if (iGame === -1 || iDate === -1 || iAway === -1 || iHome === -1) {
+        throw new Error("CSV headers not recognized. Need game_id,date,away_trico,home_tricode (or game_id,date,away,home).");
+      }
+
+      const rows = lines.map(line => {
+        const parts = line.split(",").map(s => s.trim());
+
+        let game_id = parts[iGame] || "";
+        if (/^\d+$/.test(game_id)) game_id = game_id.padStart(10, "0");
+
+        const date = parts[iDate] || "";
+        const dateObj = parseIndexDate(date);
+
+        const away = parts[iAway] || "";
+        const home = parts[iHome] || "";
+        const matchup = (away && home) ? `${away} @ ${home}` : "";
+
+        return { game_id, date, dateObj, away, home, matchup };
+      });
+
+      // Newest first by parsed date
+      rows.sort((a, b) => {
+        const ta = a.dateObj ? a.dateObj.getTime() : -Infinity;
+        const tb = b.dateObj ? b.dateObj.getTime() : -Infinity;
+        return tb - ta;
+      });
+
+      return rows;
+    }
+
+    function getPresetSelection() {
+      const preset = document.getElementById("datePreset").value;
+
+      if (preset === "all") return { mode: "all" };
+
+      if (preset === "custom") {
+        const mode = document.getElementById("customMode").value; // days | nbadates
+        const n = parseInt(document.getElementById("customN").value, 10);
+        if (!n || n <= 0) return { mode: "custom", invalid: true, mode2: mode };
+        return { mode: mode, n, label: `Last ${n} ${mode === "days" ? "days" : "NBA dates"}` };
+      }
+
+      // format: "days:7" or "nbadates:15"
+      const [mode, nStr] = preset.split(":");
+      const n = parseInt(nStr, 10);
+      return { mode, n, label: `Last ${n} ${mode === "days" ? "days" : "NBA dates"}` };
+    }
+
+    function applyDaysFilter(rows, n, today0) {
+      const cutoff = addDays(today0, -(n - 1)); // include today as day 1
+      return rows.filter(r => r.dateObj && r.dateObj <= today0 && r.dateObj >= cutoff);
+    }
+
+    function applyNbaDatesFilter(rows, n, today0) {
+      // Get unique date keys <= today (days with games)
+      const keys = [];
+      const seen = new Set();
+
+      for (const r of rows) {
+        if (!r.dateObj) continue;
+        if (r.dateObj > today0) continue;
+        const k = dateKeyLocal(r.dateObj);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        keys.push({ key: k, dateObj: r.dateObj });
+      }
+
+      // keys already mostly in newest order because rows are sorted newest first,
+      // but we sort to be safe:
+      keys.sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
+
+      const selected = new Set(keys.slice(0, n).map(x => x.key));
+      return rows.filter(r => r.dateObj && selected.has(dateKeyLocal(r.dateObj)));
+    }
+
+    function render() {
+      const q = (document.getElementById("q").value || "").trim().toLowerCase();
+      const limit = parseInt(document.getElementById("limit").value, 10) || 100;
+
+      let filtered = q
+        ? all.filter(r => (r.game_id + " " + r.date + " " + r.away + " " + r.home + " " + r.matchup).toLowerCase().includes(q))
+        : all;
+
+      const today0 = startOfToday();
+
+      // Apply preset filter
+      const sel = getPresetSelection();
+      let rangeText = "All dates";
+
+      if (sel.mode === "days") {
+        filtered = applyDaysFilter(filtered, sel.n, today0);
+        rangeText = sel.label;
+      } else if (sel.mode === "nbadates") {
+        filtered = applyNbaDatesFilter(filtered, sel.n, today0);
+        rangeText = sel.label;
+      } else if (sel.mode === "custom" && sel.invalid) {
+        rangeText = (sel.mode2 === "nbadates") ? "Custom NBA dates" : "Custom days";
+      }
+
+      const slice = filtered.slice(0, limit);
+      const tbody = document.getElementById("rows");
+
+      if (slice.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-muted">
+              No games match your filters.
+              <button class="btn btn-outline-light btn-sm ms-2" onclick="clearSearch()">Clear search</button>
+            </td>
+          </tr>`;
+      } else {
+        tbody.innerHTML = slice.map(r => `
+          <tr>
+            <td class="mono fw-semibold">${r.game_id}</td>
+            <td>
+              <span class="badge rounded-pill badge-soft">${r.date}</span>
+            </td>
+            <td class="fw-semibold">${r.away}</td>
+            <td class="fw-semibold">${r.home}</td>
+            <td>${r.matchup}</td>
+            <td class="row-actions">
+              <div class="d-flex gap-2">
+                <button class="btn btn-outline-light btn-sm" onclick="copyText('${r.game_id}')">Copy</button>
+                <a class="btn btn-accent btn-sm" href="${analyzeUrl(r.game_id)}" target="_blank" rel="noopener">Analyze</a>
+              </div>
+            </td>
+          </tr>
+        `).join("");
+      }
+
+      document.getElementById("meta").textContent =
+        `${rangeText} • Showing ${slice.length} of ${filtered.length} results (${all.length} total).`;
+    }
+
+    function clearSearch() {
+      document.getElementById("q").value = "";
+      render();
+      toast("Cleared ✅");
+    }
+
+    async function init() {
+      hideError();
+      document.getElementById("rows").innerHTML = `<tr><td colspan="6" class="text-muted">Loading…</td></tr>`;
+      try {
+        const txt = await loadCsvText();
+        all = parseCsv(txt);
+        render();
+      } catch (e) {
+        showError(String(e.message || e));
+        document.getElementById("rows").innerHTML = `<tr><td colspan="6" class="text-muted">No data.</td></tr>`;
+        document.getElementById("meta").textContent = "No data loaded.";
+      }
+    }
+
+    // custom clutch window UX
+    const windowSel = document.getElementById("window");
+    const customWrap = document.getElementById("customWrap");
+    windowSel.addEventListener("change", () => {
+      customWrap.style.display = (windowSel.value === "custom") ? "block" : "none";
+      render(); // analyzeUrl depends on selected clutch seconds
+    });
+
+    // ✅ Recent filter UX (days vs NBA dates)
+    const datePreset = document.getElementById("datePreset");
+    const customPresetWrap = document.getElementById("customPresetWrap");
+    const customMode = document.getElementById("customMode");
+    const customN = document.getElementById("customN");
+
+    datePreset.addEventListener("change", () => {
+      customPresetWrap.style.display = (datePreset.value === "custom") ? "block" : "none";
+      render();
+    });
+
+    customMode.addEventListener("change", render);
+    customN.addEventListener("input", render);
+
+    // existing listeners
+    document.getElementById("q").addEventListener("input", render);
+    document.getElementById("limit").addEventListener("change", render);
+    document.getElementById("reload").addEventListener("click", init);
+
+    init();
+</script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Clutch Games • Clutch Rating Analyzer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root{
+            --app-bg: #0b1220;
+            --app-card: rgba(255,255,255,.07);
+            --app-card-2: rgba(255,255,255,.10);
+            --app-border: rgba(255,255,255,.12);
+            --app-text: rgba(255,255,255,.92);
+            --app-muted: rgba(255,255,255,.70);
+            --app-muted-2: rgba(255,255,255,.86);
+            --app-accent: #7c5cff;
+            --app-accent-2: #22c55e;
+            --app-radius: 18px;
+            --app-shadow: 0 18px 50px rgba(0,0,0,.35);
+
+            /* New: explicit select colors (for open dropdown readability) */
+            --select-bg: #0f172a;
+            --select-bg-2: #111c33;
+            --select-text: rgba(255,255,255,.92);
+            --select-border: rgba(255,255,255,.16);
+        }
+
+        body{
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            background:
+                radial-gradient(1200px 520px at 15% -10%, rgba(124,92,255,0.35), transparent 60%),
+                radial-gradient(900px 450px at 85% 0%, rgba(34,197,94,0.22), transparent 55%),
+                radial-gradient(800px 520px at 50% 110%, rgba(124,92,255,0.18), transparent 60%),
+                var(--app-bg);
+            color: var(--app-text);
+        }
+
+        .app-container { max-width: 980px; }
+
+        .app-card{
+            background: linear-gradient(180deg, var(--app-card), rgba(255,255,255,.03));
+            border: 1px solid var(--app-border) !important;
+            border-radius: var(--app-radius) !important;
+            box-shadow: var(--app-shadow);
+        }
+
+        .app-card-header{
+            background: linear-gradient(180deg, var(--app-card-2), var(--app-card));
+            border-bottom: 1px solid var(--app-border) !important;
+        }
+
+        .text-muted { color: var(--app-muted) !important; }
+
+        .badge-soft{
+            background: rgba(124,92,255,.18);
+            border: 1px solid rgba(124,92,255,.35);
+            color: rgba(255,255,255,.92);
+        }
+
+        .btn-accent{
+            background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(124,92,255,.72));
+            border: 1px solid rgba(124,92,255,.65);
+            color: #fff;
+        }
+        .btn-accent:hover{ color:#fff; }
+
+        /* Controls on dark (closed state) */
+        .form-select, .form-control{
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.14);
+            color: rgba(255,255,255,.92);
+        }
+        .form-select:focus, .form-control:focus{
+            border-color: rgba(124,92,255,.70);
+            box-shadow: 0 0 0 .25rem rgba(124,92,255,.18);
+            background: rgba(255,255,255,.08);
+            color: rgba(255,255,255,.95);
+        }
+
+        /*
+          ✅ Fix: open dropdown readability on Windows/Chrome
+          Native select menus follow OS color scheme unless you force it.
+          We apply this only to your two dropdowns via .ux-select.
+        */
+        .ux-select{
+            height: 46px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border-radius: 14px;
+
+            /* Force dark native dropdown menu where supported */
+            color-scheme: dark;
+            background-color: var(--select-bg);
+            border-color: var(--select-border);
+            color: var(--select-text);
+        }
+
+        /* Make sure options are readable when the dropdown opens */
+        .ux-select option,
+        .ux-select optgroup{
+            background-color: var(--select-bg);
+            color: var(--select-text);
+        }
+
+        /* When an option is hovered/selected (some browsers respect this) */
+        .ux-select option:checked{
+            background-color: var(--select-bg-2);
+            color: var(--select-text);
+        }
+
+        /* Your helper text */
+        .helper{ color: var(--app-muted-2); }
+        .helper-spacer{ height: 18px; }
+
+        .filters-grid{
+            background: rgba(255,255,255,.03);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 16px;
+            padding: 14px;
+        }
+
+        /* Formula typography */
+        .formula{
+            font-family: "Source Sans 3", Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            font-size: 1rem;
+            line-height: 1.25;
+            color: rgba(255,255,255,.92);
+        }
+        .formula .k{
+            color: rgba(255,255,255,.74);
+            font-weight: 700;
+            margin-right: 6px;
+        }
+        .formula code{
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.12);
+            color: rgba(255,255,255,.95);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-family: inherit;
+            font-size: 0.96em;
+            white-space: nowrap;
+        }
+
+        .mono{
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container app-container py-4 py-md-5">
+
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge rounded-pill badge-soft">League View</span>
+                <h1 class="h4 fw-bold mb-0">Clutch Games Around the League</h1>
+            </div>
+            <div class="text-muted small mt-2">
+                Clutch window: <strong>last 5:00 of 4Q + all OT</strong> • Close games: margin ≤ 7 at least once in clutch
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-light btn-sm" href="/">Home</a>
+        </div>
+    </div>
+
+    <div class="app-card mb-4">
+        <div class="app-card-header p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                <div>
+                    <div class="h6 fw-bold mb-1">Filters</div>
+                    <div class="text-muted small">Pick how far back to scan, then rank games by clutch.</div>
+                </div>
+                <span class="badge rounded-pill badge-soft">/nba/clutchest</span>
+            </div>
+        </div>
+
+        <div class="p-3 p-md-4">
+            <form class="row g-3 align-items-end" method="get" action="/nba/clutchest">
+                <div class="filters-grid">
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold mb-2">Days Back (game dates)</label>
+                            <select class="form-select ux-select" name="days" data-bs-theme="dark">
+                                <option value="0"  th:selected="${days == 0}">All season</option>
+                                <option value="3"  th:selected="${days == 3}">3</option>
+                                <option value="5"  th:selected="${days == 5}">5</option>
+                                <option value="7"  th:selected="${days == 7}">7</option>
+                                <option value="10" th:selected="${days == 10}">10</option>
+                                <option value="14" th:selected="${days == 14}">14</option>
+                                <option value="21" th:selected="${days == 21}">21</option>
+                                <option value="30" th:selected="${days == 30}">30</option>
+                                <option value="45" th:selected="${days == 45}">45</option>
+                                <option value="60" th:selected="${days == 60}">60</option>
+                                <option value="90" th:selected="${days == 90}">90</option>
+                            </select>
+                            <div class="small mt-2 helper">Counts unique NBA game dates (not calendar days).</div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold mb-2">Top</label>
+                            <select class="form-select ux-select" name="top" data-bs-theme="dark">
+                                <option value="10" th:selected="${top == 10}">10</option>
+                                <option value="15" th:selected="${top == 15}">15</option>
+                                <option value="25" th:selected="${top == 25}">25</option>
+                                <option value="50" th:selected="${top == 50}">50</option>
+                                <option value="75" th:selected="${top == 75}">75</option>
+                                <option value="100" th:selected="${top == 100}">100</option>
+                            </select>
+                            <div class="helper-spacer"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="text-muted small mb-2">Clutch formula</div>
+                            <div class="formula">
+                                <span class="k">Score</span>
+                                <code>(10 × leadChanges) + (6 × ties) + (0.5 × clutchPoints)</code>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <button class="btn btn-accent w-100" style="height:46px; border-radius:14px;">
+                                Load Clutchest Games
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="text-muted small mb-3" th:if="${rows == null || #lists.isEmpty(rows)}">
+        No games loaded yet. Click <strong>Load Clutchest Games</strong>.
+    </div>
+
+    <div class="app-card" th:if="${rows != null && !#lists.isEmpty(rows)}">
+        <div class="app-card-header p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                <div>
+                    <div class="h6 fw-bold mb-1">Ranked games</div>
+                    <div class="text-muted small">Only games that were close (≤ 7) at least once in clutch are included.</div>
+                </div>
+                <span class="badge rounded-pill badge-soft" th:text="'Rows: ' + ${#lists.size(rows)}">Rows: 0</span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent;">
+                <thead>
+                <tr class="text-muted small">
+                    <th style="width:60px;">#</th>
+                    <th>Date</th>
+                    <th>Matchup</th>
+                    <th class="text-end">Score</th>
+                    <th class="text-end">Lead Chg</th>
+                    <th class="text-end">Ties</th>
+                    <th class="text-end">Clutch Pts</th>
+                    <th class="text-end d-none d-lg-table-cell">Final</th>
+                    <th style="width:140px;"></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r,iter : ${rows}">
+                    <td class="text-muted" th:text="${iter.index + 1}">1</td>
+                    <td class="mono" th:text="${r.date}">2025-10-24</td>
+                    <td>
+                        <strong th:text="${r.away}">BOS</strong>
+                        <span class="text-muted">@</span>
+                        <strong th:text="${r.home}">NYK</strong>
+                    </td>
+                    <td class="text-end mono" th:text="${#numbers.formatDecimal(r.clutchinessScore,1,1)}">0.0</td>
+                    <td class="text-end mono" th:text="${r.leadChanges}">0</td>
+                    <td class="text-end mono" th:text="${r.ties}">0</td>
+                    <td class="text-end mono" th:text="${r.clutchPoints}">0</td>
+                    <td class="text-end mono text-muted d-none d-lg-table-cell" th:text="${r.finalScore}">BOS 112 - 110 NYK</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-accent"
+                           th:href="@{/nba/game(gameId=${r.gameId},clutchSeconds=300)}">
+                            Analyze
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
