@@ -1,25 +1,21 @@
-# Use Java 21 (safe for Spring Boot 3+)
-FROM eclipse-temurin:21-jdk-jammy
-
-# Set working directory
+# ---- Build stage ----
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copy Maven wrapper and config
-COPY mvnw .
-COPY .mvn .mvn
+# Copy project files
 COPY pom.xml .
+COPY src ./src
 
-# Download dependencies (cached layer)
-RUN ./mvnw dependency:go-offline
+# Build jar
+RUN mvn -q -DskipTests clean package
 
-# Copy source code
-COPY src src
+# ---- Run stage ----
+FROM eclipse-temurin:21-jre
+WORKDIR /app
 
-# Build the application
-RUN ./mvnw clean package -DskipTests
+COPY --from=build /app/target/*.jar app.jar
 
-# Expose Render's port
+# Render sets PORT; Spring reads it via server.port=${PORT:8081}
 EXPOSE 8080
 
-# Run the app (Render injects PORT)
-CMD ["java", "-jar", "target/*.jar"]
+CMD ["java", "-jar", "app.jar"]
